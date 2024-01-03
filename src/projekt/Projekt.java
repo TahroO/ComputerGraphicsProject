@@ -10,9 +10,6 @@ import lenz.opengl.AbstractOpenGLBase;
 import lenz.opengl.ShaderProgram;
 import lenz.opengl.Texture;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Projekt extends AbstractOpenGLBase {
 
 	private int vaoId;
@@ -20,6 +17,7 @@ public class Projekt extends AbstractOpenGLBase {
 	private int vaoId3;
 	private int attributePosition = 0;
 	private int numberOfPoints;
+	private int objectVertGroupCounter;
 
 	private float winkel = 0.01f;
 	private Matrix4 matrixObject1 = new Matrix4();
@@ -36,6 +34,12 @@ public class Projekt extends AbstractOpenGLBase {
 
 	@Override
 	protected void init() {
+
+		String objFilePath = "/home/brot/Documents/Projects/ComputerGrafik/ComputerGrafikUebung1/src/res/objects/Kugel.obj";
+		float[] objVertices = Utils.readVertexCoordinates(objFilePath);
+		float[] objTextures = Utils.readTextureCoordinates(objFilePath);
+		float[] objNormals = Utils.readNormalCoordinates(objFilePath);
+
 		shaderProgram = new ShaderProgram("projekt");
 		glUseProgram(shaderProgram.getId());
 
@@ -45,7 +49,7 @@ public class Projekt extends AbstractOpenGLBase {
 		Texture texture = new Texture("blue1.png");
 		glBindTexture(GL_TEXTURE_2D, texture.getId());
 
-		Texture texture2 = new Texture("star2.png");
+		Texture texture2 = new Texture("squares.png");
 		glBindTexture(GL_TEXTURE_2D, texture2.getId());
 
 
@@ -108,8 +112,6 @@ public class Projekt extends AbstractOpenGLBase {
 				0.5f, -0.5f, -0.5f, 1     // back bottom
 		};
 
-
-		float [] sphere = generateSphereCoordinates(30,30,1.0f);
 
 
 		// COLOR
@@ -321,7 +323,8 @@ public class Projekt extends AbstractOpenGLBase {
 		// determines how many points are 1 pack of coordinates for 1 vertex
 		// this is for a cube
 		numberOfPoints = cubeCoords.length/4;
-
+		// objImport
+		objectVertGroupCounter = objVertices.length / 3;
 		//VAO
 		vaoId = glGenVertexArrays();
 		glBindVertexArray(vaoId);
@@ -330,24 +333,35 @@ public class Projekt extends AbstractOpenGLBase {
 		generateVBO(cubeCoords, 4, 0);
 		generateVBO(cubeColor, 3, 1);
 
-
-
 		generateVBO(nVector,3,2);
 		generateVBO(lightColor, 3, 3);
 		generateVBO(uvCoords,2,4);
 
-		vaoId2 = glGenVertexArrays();
-		glBindVertexArray(vaoId2);
-
-		generateVBO(cubeCoords, 4,0);
-		generateVBO(cubeColor, 3,1);
-
 		vaoId3 = glGenVertexArrays();
 		glBindVertexArray(vaoId3);
+		generateVBO(objVertices,3,0);
+		generateVBO(cubeColor, 3, 1);
 
-		generateVBO(cubeCoords, 4,0);
-		generateVBO(lightColor, 3,1);
-		generateVBO(nVector,3,2);
+		generateVBO(objNormals,3,2);
+		generateVBO(lightColor, 3, 3);
+		generateVBO(objTextures,2,4);
+//		int vboId = glGenBuffers();
+//		glBindBuffer(GL_ARRAY_BUFFER, vboId);
+//		glBufferData(GL_ARRAY_BUFFER, objVertices, GL_STATIC_DRAW);
+//		glVertexAttribPointer(0,3, GL_FLOAT,false, 0, 0);
+//		glEnableVertexAttribArray(0);
+//		vaoId2 = glGenVertexArrays();
+//		glBindVertexArray(vaoId2);
+//
+//		generateVBO(cubeCoords, 4,0);
+//		generateVBO(cubeColor, 3,1);
+
+//		vaoId3 = glGenVertexArrays();
+//		glBindVertexArray(vaoId3);
+//
+//		generateVBO(cubeCoords, 4,0);
+//		generateVBO(lightColor, 3,1);
+//		generateVBO(nVector,3,2);
 
 		glEnable(GL_DEPTH_TEST); // z-Buffer aktivieren // orndet objekte korrekt über und untereinander an
 //		glEnable(GL_CULL_FACE); // backface culling aktivieren // uhrzeigersinn entfernt orientierung
@@ -395,9 +409,9 @@ public class Projekt extends AbstractOpenGLBase {
 		glUniformMatrix4fv(loc, false, matrixObject2.getValuesAsArray());
 		glDrawArrays(GL_TRIANGLES, 0, numberOfPoints);
 
-//		glBindVertexArray(vaoId3);
+		glBindVertexArray(vaoId3);
 		glUniformMatrix4fv(loc, false, matrixObject3.getValuesAsArray());
-		glDrawArrays(GL_TRIANGLES, 0, numberOfPoints);
+		glDrawArrays(GL_TRIANGLES, 0, objectVertGroupCounter);
 
 
 
@@ -414,38 +428,5 @@ public class Projekt extends AbstractOpenGLBase {
 		glVertexAttribPointer(attributePosition, sizeOfValueGroup, GL_FLOAT, false, 0, 0);
 		glEnableVertexAttribArray(attributePosition);
 
-	}
-
-	private float[] generateSphereCoordinates(int numLatitude, int numLongitude, float radius) {
-		List<Float> coordinatesList = new ArrayList<>();
-
-		for (int lat = 0; lat <= numLatitude; lat++) {
-			double theta = lat * Math.PI / numLatitude;
-			double sinTheta = Math.sin(theta);
-			double cosTheta = Math.cos(theta);
-
-			for (int lon = 0; lon <= numLongitude; lon++) {
-				double phi = lon * 2 * Math.PI / numLongitude;
-				double sinPhi = Math.sin(phi);
-				double cosPhi = Math.cos(phi);
-
-				float x = (float) (radius * sinTheta * cosPhi);
-				float y = (float) (radius * sinTheta * sinPhi);
-				float z = (float) (radius * cosTheta);
-
-				coordinatesList.add(x);
-				coordinatesList.add(y);
-				coordinatesList.add(z);
-				coordinatesList.add(1f);
-			}
-		}
-
-		// Convert the list to a float array
-		float[] coordinatesArray = new float[coordinatesList.size()];
-		for (int i = 0; i < coordinatesList.size(); i++) {
-			coordinatesArray[i] = coordinatesList.get(i);
-		}
-		System.out.println(coordinatesArray.length);
-		return coordinatesArray;
 	}
 }
